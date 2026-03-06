@@ -1965,3 +1965,32 @@ input {
   box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.7);
   background-color: rgba(0, 0, 0, 0.6) !important;
 }
+
+/* next and perv btns reaction */
+
+/* Base Icon Styling */
+#next-btn i,
+#back-btn i {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+/* Continue Button: Icon swoops to the right */
+#next-btn:hover i {
+  transform: translateX(5px);
+  opacity: 0.8;
+}
+
+/* Back Button: Icon swoops to the left */
+#back-btn:hover i {
+  transform: translateX(-5px);
+  color: white;
+  /* Make the arrow brighter on hover */
+}
+
+/* Optional: Active state "click" feel */
+#next-btn:active i {
+  transform: translateX(8px);
+}
+
+/*  */

@@ -127,11 +127,13 @@
 
         <div id="action-bar" class="mt-8 flex items-center justify-between reveal animate-up [animation-delay:450ms]">
             <button id="back-btn" onclick="prevStep()"
-                class="text-sm text-white/30 hover:text-white transition-colors hidden"><i
-                    class="bi bi-arrow-left-short"></i> Back</button>
+                class="flex items-center text-sm text-white/30 hover:text-white transition-colors hidden">
+                <i class="bi bi-arrow-left-short text-lg me-1"></i> Back
+            </button>
+
             <button id="next-btn" onclick="nextStep()"
-                class="ml-auto bg-white text-black font-bold px-8 py-3 rounded-xl hover:bg-gray-100 transition-all active:scale-95">
-                Continue
+                class="flex items-center ml-auto bg-white text-black font-bold px-8 py-3 rounded-xl hover:bg-gray-100 transition-all active:scale-95">
+                Continue <i class="bi bi-arrow-right-short text-xl ms-1"></i>
             </button>
         </div>
 
@@ -401,12 +403,36 @@
             });
         }
 
-        function nextStep() {
+        async function nextStep() {
+            // --- NEW: Capture data from the CURRENT step before it's deleted ---
+            saveCurrentStepData();
+
             if (currentStep < steps.length - 1) {
                 currentStep++;
                 render();
             } else {
-                alert("Account Building Complete!");
+                // WE ARE AT THE LAST STEP: "Store Name"
+                await handleSignupFlow();
+            }
+        }
+
+        function saveCurrentStepData() {
+            // 1. Capture text inputs (Email, Names, Password, Store Name)
+            const inputs = document.querySelectorAll('#step-content input');
+            inputs.forEach(input => {
+                if (input.value) {
+                    // We store by placeholder or ID to identify what the value is
+                    const key = input.id || input.placeholder;
+                    sessionStorage.setItem(key, input.value);
+                }
+            });
+
+            // 2. Capture Option Card selections (Focus, Channels, Inventory)
+            const selectedOption = document.querySelector('.option-card.selected');
+            if (selectedOption) {
+                const value = selectedOption.querySelector('.font-medium').innerText;
+                // Store using the current step title so we know which choice it was
+                sessionStorage.setItem(`choice_${steps[currentStep].title}`, value);
             }
         }
 
@@ -417,20 +443,65 @@
             }
         }
 
+        // function setChoice(el) {
+        //     // 1. Get the parent container of the clicked element
+        //     const container = el.parentElement;
+
+        //     // 2. Remove 'selected' from all other siblings within this container
+        //     container.querySelectorAll('.option-card').forEach(card => {
+        //         if (card !== el) {
+        //             card.classList.remove('selected');
+        //         }
+        //     });
+
+        //     el.classList.toggle('selected');
+        // }
+
+        // function setChoice(el) {
+        //     const container = el.parentElement;
+
+        //     // Remove 'selected' from all cards in this specific container
+        //     container.querySelectorAll('.option-card').forEach(card => {
+        //         card.classList.remove('selected');
+        //         // Reset the checkmark icon if you're using the scale-0 logic
+        //         const icon = card.querySelector('.bi-check-lg');
+        //         if (icon) icon.classList.add('scale-0');
+        //     });
+
+        //     // Add 'selected' to the clicked one
+        //     el.classList.add('selected');
+
+        //     // Animate the checkmark icon
+        //     const activeIcon = el.querySelector('.bi-check-lg');
+        //     if (activeIcon) activeIcon.classList.remove('scale-0');
+        // }
         function setChoice(el) {
-            // 1. Get the parent container of the clicked element
             const container = el.parentElement;
 
-            // 2. Remove 'selected' from all other siblings within this container
+            // 1. Visual Reset
             container.querySelectorAll('.option-card').forEach(card => {
-                if (card !== el) {
-                    card.classList.remove('selected');
-                }
+                card.classList.remove('selected');
+                const icon = card.querySelector('.bi-check-lg');
+                // if (icon) icon.classList.add('scale-0');
             });
 
-            el.classList.toggle('selected');
-        }
+            // 2. Visual Select
+            el.classList.add('selected');
+            const activeIcon = el.querySelector('.bi-check-lg');
+            // if (activeIcon) activeIcon.classList.remove('scale-0');
 
+            // 3. DATA PERSISTENCE (The missing piece!)
+            // Get the name of the choice (e.g., "Apparel & Accessories")
+            const choiceValue = el.querySelector('.font-medium').innerText;
+
+            // Get the current step title to use as a unique key (e.g., "What’s your focus?")
+            const currentStepTitle = steps[currentStep].title;
+
+            // Save it so it survives the render() wipe
+            sessionStorage.setItem(currentStepTitle, choiceValue);
+
+            console.log(`Saved: ${currentStepTitle} -> ${choiceValue}`);
+        }
         function togglePassword() {
             const input = document.getElementById('passwordInput');
             const icon = document.getElementById('toggleIcon');
@@ -468,12 +539,12 @@
         </div>
     </div>
                 `;
-                nextBtn.innerText = "Sign In";
+                nextBtn.innerHTML = 'Sign In <i class="bi bi-door-open ms-2"></i>';
                 document.getElementById('toggle-area').innerHTML = `Don't have an account? <button onclick="toggleSignIn()" class="text-white font-medium">Sign Up</button>`;
                 updateIndicators();
             } else {
                 currentStep = 0;
-                nextBtn.innerText = "Continue";
+                nextBtn.innerHTML = 'Continue <i class="bi bi-arrow-right-short text-lg me-1"></i>';
                 document.getElementById('toggle-area').innerHTML = `Already have an account? <button onclick="toggleSignIn()" class="text-white font-medium">Sign In</button>`;
                 render();
             }
@@ -555,7 +626,33 @@
                 nextBtn.style.opacity = "1";
             }, 1200);
         }
-        // Initial Load
+
+        async function handleSignupFlow() {
+
+
+            const finalData = {
+                // Retrieve from sessionStorage using the keys we set in saveCurrentStepData
+                account: {
+                    email: sessionStorage.getItem('email'),
+                    firstName: sessionStorage.getItem('First Name'),
+                    lastName: sessionStorage.getItem('Last Name'),
+                    // We don't log the actual password for safety, just check if it exists
+                    hasPassword: sessionStorage.getItem('Create a password')
+                },
+                storeDetails: {
+                    name: sessionStorage.getItem('My Awesome Store'),
+                    focus: sessionStorage.getItem('choice_What’s your focus?'),
+                    channels: sessionStorage.getItem('choice_Choose your sales channels'),
+                    inventory: sessionStorage.getItem('choice_Inventory Size')
+                },
+                timestamp: new Date().toISOString()
+            };
+
+
+            console.table(finalData.storeDetails);
+            console.table(finalData.account);
+
+        }
         render();
     </script>
 </body>
