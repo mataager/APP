@@ -15,3 +15,62 @@ const auth = firebase.auth();
 const database = firebase.database();
 
 //
+
+
+
+// { 
+ 
+//  "store-info": { 
+//    "adminInfo": { 
+//      "Email": "email", 
+//      "Uid": "Uid", 
+//      "name": "firstName+lastName", 
+//      "role": "client", 
+//      "token": "" 
+//    }, 
+//    "billingInfo": { 
+//      "-Oiciohhe4IpWPOVB8r3": { 
+//        "planAutoRenew": " Waiting ", 
+//        "planDiscount": " Waiting ", 
+//        "planExpDate": "3 days from created_at ", 
+//        "planPaymentMethod": " Waiting ", 
+//        "planId": " planId ", 
+//        "planPrice": " planPrice ", 
+//        "planStartedAt": " created_at ", 
+//        "planStatus": "Waiting", 
+//        "planSubType": "plan name", 
+//        "planTotalPaid": "Waiting",  
+//        "planfirsttime": "yes" 
+//      } 
+//    }, 
+
+//    "mainInfo": { 
+
+//     "busFocus": { 
+//      "busCategory": " focus ", 
+//      "busGen": " Waiting ", 
+//      "busDedicated": " Waiting ", 	 
+//    },
+
+//      "locationInfo": { 
+//      "city": " Waiting ", 
+//      "country": " Waiting ", 
+//      "district": " Waiting ", 
+//     "locationUrl": " Waiting ",		 
+//    }, 
+
+//  }, 
+
+//     "structureInfo": { 
+//     "Lightning": "on , off (bool)", 
+//     "defDomain": " matager.com/dashboard/uid", 
+//     "endpoint": "/xnInDpQ9pOawDjPbckKAhVgR5Xx1", 
+//     "busEmail": "Waiting", 
+//     "busPhone": "Waiting", 
+//     "plan": "planId", 
+//     "store-name": "storeName",
+//     "themeName": "default",
+//     "themeId": "38297hdd-3" 
+//    } 
+//  } 
+// } 

@@ -91,9 +91,137 @@
             opacity: 1 !important;
         }
     </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, updateProfile } from
+            "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDss53pHibCpqo87_1bhoUHkf8Idnj-Fig",
+            authDomain: "matager-f1f00.firebaseapp.com",
+            databaseURL: "https://matager-f1f00-default-rtdb.firebaseio.com",
+            projectId: "matager-f1f00",
+            storageBucket: "matager-f1f00.appspot.com",
+            messagingSenderId: "922824110897",
+            appId: "1:922824110897:web:b7978665d22e2d652e7610",
+            measurementId: "G-FWS29Z8GMT"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        window.settingEnvironment = async () => {
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.disabled = true;
+
+            // Apply the rolling dots animation to the button
+            nextBtn.innerHTML = `
+    Setting up your store
+    <div class="loading-container">
+        <span class="dot-bounce bg-slate-950"></span>
+        <span class="dot-bounce bg-slate-950"></span>
+        <span class="dot-bounce bg-slate-950"></span>
+    </div>
+    `;
+
+            // Artificial delay of 5 seconds to show the animation
+            const minimumDelay = new Promise(resolve => setTimeout(resolve, 5000));
+
+            try {
+                // Start Firebase operations and the timer simultaneously
+                // We wait for BOTH to finish before proceeding
+                const [userCredential] = await Promise.all([
+                    createUserWithEmailAndPassword(auth, formData.email, formData.password),
+                    minimumDelay
+                ]);
+
+                const user = userCredential.user;
+                const uid = user.uid;
+
+                // Get ID Token
+                const userToken = await user.getIdToken();
+
+                // Update user profile
+                await updateProfile(user, { displayName: "client" });
+
+                // Prepare timestamps
+                const createdAt = new Date().toISOString();
+                const expDate = new Date();
+                expDate.setDate(expDate.getDate() + 3); // 3-day trial period
+
+                const finalSchema = {
+                    "store-info": {
+                        "adminInfo": {
+                            "Email": formData.email,
+                            "Uid": uid,
+                            "name": `${formData.firstName} ${formData.lastName}`,
+                            "role": "client"
+                        },
+                        "billingInfo": {
+                            "initial_plan": {
+                                "planAutoRenew": "Waiting",
+                                "planDiscount": "Waiting",
+                                "planExpDate": expDate.toISOString(),
+                                "planPaymentMethod": "Waiting",
+                                "planId": formData.inventory,
+                                "planPrice": "Waiting",
+                                "planStartedAt": createdAt,
+                                "planStatus": "Waiting",
+                                "planSubType": formData.inventory,
+                                "planTotalPaid": "Waiting",
+                                "planfirsttime": "yes"
+                            }
+                        },
+                        "mainInfo": {
+                            "busFocus": {
+                                "busCategory": formData.focus,
+                                "busGen": "Waiting",
+                                "busDedicated": "Waiting"
+                            },
+                            "locationInfo": {
+                                "city": "Waiting",
+                                "country": "Waiting",
+                                "district": "Waiting",
+                                "locationUrl": "Waiting"
+                            }
+                        },
+                        "structureInfo": {
+                            "Lightning": "on",
+                            "defDomain": `matager.com/dashboard/${uid}`,
+                            "endpoint": `/${uid}`,
+                            "busEmail": "Waiting",
+                            "busPhone": "Waiting",
+                            "plan": formData.inventory,
+                            "store-name": formData.storeName,
+                            "themeName": "default",
+                            "themeId": "38297hdd-3"
+                        }
+                    }
+                };
+
+                // Save to RTDB
+                await set(ref(db, 'Stores/' + uid), finalSchema);
+
+                // Final success state
+                nextBtn.innerHTML = `Environment Ready! <i class="bi bi-check-circle-fill ms-2"></i>`;
+
+                setTimeout(() => {
+                    window.location.href = "/dashboard";
+                }, 1500);
+
+            } catch (error) {
+                console.error("Setup Error:", error);
+                alert("Setup Failed: " + error.message);
+                nextBtn.disabled = false;
+                nextBtn.innerHTML = 'Finish Setup <i class="bi bi-arrow-right-short ms-1"></i>';
+            }
+        };
+    </script>
 </head>
 
-<body class="min-h-screen flex flex-col items-center justify-start pt-[30px] px-4 md:justify-center md:pt-0">
+<body class="min-h-screen flex flex-col items-center justify-center pt-[30px] px-4 md:pt-0">
 
     <div class="fixed inset-0 -z-10">
         <div class="absolute rounded-full -top-20 -left-20 w-[500px] h-[500px] bg-[#0ea5e9] blur-[120px] opacity-10">
@@ -131,7 +259,7 @@
         <div id="action-bar" class="mt-8 flex items-center justify-between reveal animate-up [animation-delay:450ms]">
             <button id="back-btn" onclick="prevStep()"
                 class="flex items-center text-sm text-white/30 hover:text-white transition-colors hidden">
-                <i class="bi bi-arrow-left-short text-lg me-1"></i> Back
+                <i class="bi bi-arrow-left-short me-1"></i> Back
             </button>
 
             <button id="next-btn" onclick="nextStep()"
@@ -207,27 +335,32 @@
                     {
                         t: "1 - 5 item",
                         s: "Perfect for a boutique setup or single product launch.",
-                        p: "50 EGP/mo"
+                        p: "50 EGP/mo",
+                        id: "plan1" // Added ID
                     },
                     {
                         t: "5 - 20 item",
                         s: "Ideal for small collections and growing brands.",
-                        p: "150 EGP/mo"
+                        p: "150 EGP/mo",
+                        id: "plan2" // Added ID
                     },
                     {
                         t: "20 - 100 item",
                         s: "A comprehensive catalog for established shops.",
-                        p: "250 EGP/mo"
+                        p: "250 EGP/mo",
+                        id: "plan3" // Added ID
                     },
                     {
                         t: "100 - 300 item",
                         s: "High-volume inventory with multiple categories.",
-                        p: "650 EGP/mo"
+                        p: "650 EGP/mo",
+                        id: "plan4" // Added ID
                     },
                     {
                         t: "300 - 750 item",
                         s: "Large scale enterprise-level product management.",
-                        p: "1200 EGP/mo"
+                        p: "1200 EGP/mo",
+                        id: "plan5" // Added ID
                     }
                 ], data.inventory)
             },
@@ -242,32 +375,13 @@
             }
         ];
 
-        // function renderOptions(opts, current, hasIcons = false) {
-        //     return `<div class="grid grid-cols-1 categories-options gap-3 animate-up">
-        //     ${opts.map(o => `
-        //         <div class="option-card p-4 rounded-xl flex justify-between items-center cursor-pointer transition-all ${current === o.t ? 'selected' : ''}" onclick="setChoice(this, '${o.t}')">
-        //             <div class="flex flex-col z-10">
-        //                 <div class="flex items-center gap-2">
-        //                     <span class="text-white font-medium">${o.t}</span>
-        //                     ${o.p ? `<span class="text-[10px] px-2 py-0.5 bg-white/10 rounded-full border border-white/10">${o.p}</span>` : ''}
-        //                 </div>
-        //                 <small class="text-white/50">${o.s}</small>
-        //             </div>
-        //             ${hasIcons ? `<div class="submerged-icon absolute -bottom-5 left-4 opacity-10 pointer-events-none">${o.i.split(',').map(icon => `<i class="bi ${icon}"></i>`).join('')}</div>` : ''}
-        //             <div class="check-box w-5 h-5 border border-white/20 rounded flex items-center justify-center">
-        //                 <i class="bi bi-check-lg ${current === o.t ? '' : 'scale-0'} transition-transform text-black"></i>
-        //             </div>
-        //         </div>`).join('')}
-        // </div>`;
-        // }
         function renderOptions(opts, current, hasIcons = false) {
             return `<div class="grid grid-cols-1 categories-options gap-3 animate-up">
     ${opts.map(o => {
                 const isSelected = current === o.t;
                 return `
         <div class="option-card group relative overflow-hidden p-4 rounded-xl flex justify-between items-center cursor-pointer transition-all duration-300 ${isSelected ? 'selected' : ''}" 
-             onclick="setChoice(this, '${o.t}')" 
-             style="height: 100px;">
+            onclick="setChoice(this, '${o.t}', '${o.p || ''}', '${o.id || ''}')" style="height: 100px;">
             
             <div class="flex flex-col z-10">
                 <div class="flex items-center gap-2">
@@ -289,6 +403,7 @@
             }).join('')}
 </div>`;
         }
+
         function saveCurrentData() {
             const step = steps[currentStep];
             if (step.fields) {
@@ -335,32 +450,39 @@
             updateIndicators();
         }
 
-        function setChoice(el, value) {
-            const key = steps[currentStep].key;
+        // function setChoice(el, value) {
+        //     const key = steps[currentStep].key;
+        //     formData[key] = value;
+        //     el.parentElement.querySelectorAll('.option-card').forEach(c => {
+        //         c.classList.remove('selected');
+        //         c.querySelector('.bi-check-lg').classList.add('scale-0');
+        //     });
+        //     el.classList.add('selected');
+        //     el.querySelector('.bi-check-lg').classList.remove('scale-0');
+        // }
+        function setChoice(el, value, price = '', planId = '') {
+            const step = steps[currentStep];
+            const key = step.key;
+
+            // Save the primary selection (e.g., "1 - 5 item")
             formData[key] = value;
+
+            // If it's the inventory step, capture the extra details
+            if (key === 'inventory') {
+                formData.planPrice = price;
+                formData.planId = planId;
+            }
+
+            // UI Feedback (Keeping your existing logic)
             el.parentElement.querySelectorAll('.option-card').forEach(c => {
                 c.classList.remove('selected');
-                c.querySelector('.bi-check-lg').classList.add('scale-0');
+                const check = c.querySelector('.bi-check-lg');
+                if (check) check.classList.add('scale-0');
             });
             el.classList.add('selected');
             el.querySelector('.bi-check-lg').classList.remove('scale-0');
         }
 
-        // function updateIndicators() {
-        //     const dots = document.querySelectorAll('.dot');
-        //     const backBtn = document.getElementById('back-btn');
-        //     const toggle = document.getElementById('toggle-area');
-        //     const indicators = document.getElementById('step-indicators');
-
-        //     backBtn.style.display = (currentStep === 0 || isSignIn || isResetting) ? 'none' : 'block';
-        //     toggle.style.display = (currentStep === 0 || isSignIn || isResetting) ? 'block' : 'none';
-        //     indicators.style.display = (isSignIn || isResetting) ? 'none' : 'flex';
-
-        //     dots.forEach((dot, i) => {
-        //         const isActive = i === currentStep;
-        //         dot.className = `dot transition-all duration-300 rounded-full ${isActive ? 'w-2.5 h-2.5 shadow-[0_0_12px_#fff] bg-white' : 'w-1.5 h-1.5 bg-white/20'}`;
-        //     });
-        // }
         function updateIndicators() {
             const indicators = document.getElementById('step-indicators');
             const dots = indicators.querySelectorAll('.dot');
@@ -397,6 +519,7 @@
                 }
             });
         }
+
         function nextStep() {
             saveCurrentData();
             if (!validateStep()) return;
@@ -405,6 +528,9 @@
                 currentStep++;
                 render();
             } else {
+                settingEnvironment();
+                formData.created_at = new Date().toISOString();
+
                 console.log("Final Data Captured:", formData);
                 // Final submission logic here
             }
@@ -451,7 +577,7 @@
                     </div>`;
 
                 // Re-bind button for Login only
-                nextBtn.innerHTML = 'Sign In <i class="bi bi-door-open text-lg ms-2"></i>';
+                nextBtn.innerHTML = 'Sign In <i class="bi bi-door-open ms-2"></i>';
                 nextBtn.onclick = handleSignIn;
 
                 toggleArea.innerHTML = `Don't have an account? <button onclick="toggleSignIn()" class="text-white hover:text-blue-400 font-medium">Sign Up</button>`;
@@ -491,7 +617,7 @@
                     <div id="status-message" class="mt-4 text-sm hidden"></div>
                 </div>`;
 
-            nextBtn.innerHTML = `Send Retrieval Link <i class="bi bi-mailbox text-lg ms-2"></i>`;
+            nextBtn.innerHTML = `Send Retrieval Link <i class="bi bi-mailbox ms-2"></i>`;
             nextBtn.onclick = () => sendResetLink();
 
             toggleArea.innerHTML = `Remembered your password? <button onclick="toggleSignIn()" class="text-white hover:text-blue-400 font-medium">Sign In</button>`;
