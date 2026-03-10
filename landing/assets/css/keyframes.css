@@ -94,11 +94,11 @@
     }
 
     /* Make the active step actually glow */
-    .step-active {
+    /* .step-active {
         background-color: white;
         box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
         border: none;
-    }
+    } */
 }
 
 /* Smooth height transition for the card */
@@ -214,4 +214,38 @@
         transform: translateY(-6px);
         opacity: 1;
     }
+}
+
+/* sign up steps animation */
+/* Smoothly hide elements that shouldn't show until the end */
+.redirectNow,
+.info-footer {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.7s ease-in-out;
+    pointer-events: none;
+}
+
+.show-final {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    pointer-events: auto !important;
+}
+
+/* Text Transition Physics */
+.step-exit {
+    opacity: 0 !important;
+    transform: translateY(20px) !important;
+    transition: all 0.5s ease-in !important;
+}
+
+.step-enter {
+    opacity: 0 !important;
+    transform: translateY(-20px) !important;
+}
+
+.step-active {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }

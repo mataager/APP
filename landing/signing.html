@@ -91,17 +91,12 @@
             opacity: 1 !important;
         }
     </style>
-    <script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import {
-            getAuth,
-            createUserWithEmailAndPassword,
-            updateProfile,
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import {
-            getDatabase,
-            ref,
-            set,
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDss53pHibCpqo87_1bhoUHkf8Idnj-Fig",
@@ -118,31 +113,18 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // --- New: Helper Function to handle the Countdown & Overlay ---
         const startRedirectCountdown = (seconds) => {
-            const overlay = document.getElementById("redirect-overlay");
-            const card = document.getElementById("overlay-card");
             const timerDisplay = document.getElementById("countdown-timer");
             let timeLeft = seconds;
-
-            // Show overlay with fade/scale animation
-            overlay.classList.remove("hidden");
-            setTimeout(() => {
-                overlay.classList.add("opacity-100");
-                card.classList.remove("scale-95");
-                card.classList.add("scale-100");
-            }, 50);
 
             const countdown = setInterval(() => {
                 const mins = Math.floor(timeLeft / 60);
                 const secs = timeLeft % 60;
-
                 timerDisplay.textContent = `${mins}:${secs < 10 ? "0" : ""}${secs}`;
 
                 if (timeLeft <= 0) {
                     clearInterval(countdown);
-                    window.location.href =
-                        "https://mataager.github.io/App/Client/Dashboard/index.html#dashboard";
+                    window.location.href = "https://mataager.github.io/App/Client/Dashboard/index.html#dashboard";
                 }
                 timeLeft--;
             }, 1000);
@@ -150,29 +132,82 @@
 
         window.settingEnvironment = async () => {
             const nextBtn = document.getElementById("next-btn");
-            nextBtn.disabled = true;
+            const overlay = document.getElementById("redirect-overlay");
+            const card = document.getElementById("overlay-card");
+            const statusHeading = overlay.querySelector("h2");
+            const statusNote = overlay.querySelector("p");
+            const redirectBtn = overlay.querySelector(".redirectNow");
+            const footerItems = overlay.querySelector(".pt-6");
 
-            nextBtn.innerHTML = `
-    Setting up your store
-    <div class="loading-container">
-        <span class="dot-bounce bg-slate-950"></span>
-        <span class="dot-bounce bg-slate-950"></span>
-        <span class="dot-bounce bg-slate-950"></span>
-    </div>
-    `;
+            const API_KEY = '34d2748e-3a4b-498e-8c43-f7ae4d1c14dbe74bcf63-e64e-4060-8b51-3441387c8d7e';
 
-            const minimumDelay = new Promise((resolve) => setTimeout(resolve, 5000));
+            const updateStepUI = async (title, note) => {
+                statusHeading.className = "text-3xl font-bold text-white mb-2 step-exit";
+                statusNote.className = "text-gray-400 text-lg mb-6 step-exit";
+                await new Promise(r => setTimeout(r, 500));
+
+                statusHeading.textContent = title;
+                statusNote.textContent = note;
+                statusHeading.className = "text-3xl font-bold text-white mb-2 step-enter";
+                statusNote.className = "text-gray-400 text-lg mb-6 step-enter";
+
+                statusHeading.offsetHeight; // Force reflow
+
+                statusHeading.className = "text-3xl font-bold text-white mb-2 step-active";
+                statusNote.className = "text-gray-400 text-lg mb-6 step-active";
+            };
+
+            // Show Overlay
+            overlay.classList.remove("hidden");
+            setTimeout(() => {
+                overlay.classList.add("opacity-100");
+                card.classList.remove("scale-95");
+                card.classList.add("scale-100");
+            }, 50);
 
             try {
-                const [userCredential] = await Promise.all([
-                    createUserWithEmailAndPassword(auth, formData.email, formData.password),
-                    minimumDelay,
-                ]);
+                // STEP 1: Collecting Data
+                await updateStepUI("Collecting Data", "Gathering your store preferences...");
+                const randomId = Math.floor(10000 + Math.random() * 90000);
+                const bucketName = `${formData.storeName}bucket${randomId}`.toLowerCase().replace(/\s+/g, '');
+                await new Promise(r => setTimeout(r, 3000));
 
-                const user = userCredential.user;
-                const uid = user.uid;
+                // STEP 2: Setting Your Environment
+                await updateStepUI("Setting Your Environment", "Creating your secure account...");
+                const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+                const uid = userCredential.user.uid;
+                await updateProfile(userCredential.user, { displayName: "client" });
+                await new Promise(r => setTimeout(r, 3000));
 
-                await updateProfile(user, { displayName: "client" });
+                // STEP 3: Establish Your Cloud
+                await updateStepUI("Establish Your Cloud", "Provisioning storage and CDN...");
+                const storageRes = await fetch('https://api.bunny.net/storagezone', {
+                    method: 'POST',
+                    headers: { AccessKey: API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Name: bucketName, Region: 'DE' })
+                });
+                const storageData = await storageRes.json();
+
+                const pullZoneRes = await fetch('https://api.bunny.net/pullzone', {
+                    method: 'POST',
+                    headers: { AccessKey: API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        Name: bucketName,
+                        StorageZoneId: storageData.Id,
+                        Type: 0,
+                        Enabled: true,
+                        OptimizerEnabled: true
+                    })
+                });
+                const pullZoneData = await pullZoneRes.json();
+                await new Promise(r => setTimeout(r, 3000));
+
+                // STEP 4: Finalizing Schema
+                await updateStepUI("Environment Ready!", "You will be redirecting to your dashboard in");
+
+                // Show final elements
+                redirectBtn.classList.add("show-final");
+                footerItems.classList.add("show-final");
 
                 const createdAt = new Date().toISOString();
                 const expDate = new Date();
@@ -196,7 +231,6 @@
                                 planPrice: "Waiting",
                                 planStartedAt: createdAt,
                                 planStatus: "Waiting",
-                                planSubType: formData.inventory,
                                 planTotalPaid: "Waiting",
                                 planfirsttime: "yes",
                             },
@@ -212,6 +246,13 @@
                                 country: "Waiting",
                                 district: "Waiting",
                                 locationUrl: "Waiting",
+                            },
+                            CloudInfo: {
+                                CloudId: storageData.Id,
+                                CloudName: bucketName,
+                                cloudPassword: storageData.Password,
+                                cloudPullZone: pullZoneData.Name,
+                                cloudUrl: "storage.bunnycdn.com",
                             },
                         },
                         structureInfo: {
@@ -229,20 +270,13 @@
                 };
 
                 await set(ref(db, "Stores/" + uid), finalSchema);
+                startRedirectCountdown(5);
 
-                // Update button state
-                nextBtn.innerHTML = `Environment Ready! <i class="bi bi-check-circle-fill ms-2"></i>`;
-
-                // Trigger the 5-minute countdown overlay
-                setTimeout(() => {
-                    startRedirectCountdown(300);
-                }, 1000);
             } catch (error) {
                 console.error("Setup Error:", error);
                 alert("Setup Failed: " + error.message);
-                nextBtn.disabled = false;
-                nextBtn.innerHTML =
-                    'Finish Setup <i class="bi bi-arrow-right-short ms-1"></i>';
+                overlay.classList.add("hidden");
+                if (nextBtn) nextBtn.disabled = false;
             }
         };
     </script>
@@ -276,7 +310,6 @@
             </p>
 
             <div id="countdown-timer" class="text-6xl font-bold text-white mb-8 tabular-nums tracking-tighter">
-                5:00
             </div>
 
             <button
