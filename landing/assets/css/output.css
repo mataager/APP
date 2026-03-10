@@ -1970,13 +1970,15 @@ input {
 
 /* Base Icon Styling */
 #next-btn i,
-#back-btn i {
+#back-btn i,
+.redirectNow i {
   display: inline-block;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
 /* Continue Button: Icon swoops to the right */
-#next-btn:hover i {
+#next-btn:hover i,
+.redirectNow:hover i {
   transform: translateX(5px);
   opacity: 0.8;
 }
