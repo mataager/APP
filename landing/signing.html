@@ -356,6 +356,8 @@
         <div class="step-line w-8 h-[1px] animate-indicator" style="animation-delay: 550ms"></div>
 
         <div class="dot animate-indicator" style="animation-delay: 600ms"></div>
+        <div class="step-line w-8 h-[1px] animate-indicator" style="animation-delay: 650ms"></div>
+        <div class="dot animate-indicator" style="animation-delay: 700ms"></div>
     </div>
     <div id="main-card" class="glass-card w-full max-w-[450px] p-10 rounded-[30px]  min-h-[380.5px]"
         style="animation-delay: 200ms">
@@ -478,7 +480,49 @@
                 <label class="text-[11px] uppercase tracking-widest text-white/30 ml-1">Store Name</label>
                 <input type="text" id="storeName" value="${data.storeName || ''}" placeholder="My Awesome Store" class="w-full px-4 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white outline-none focus:border-white/40">
             </div>`
-            }
+            },
+            {
+                title: "Store Identity",
+                sub: "Upload your logo and pick your brand color.",
+                fields: ['storeLogo', 'brandColor'],
+                html: (data) => `
+    <div class="space-y-8 animate-up">
+        <div class="flex flex-col items-center justify-center">
+            <div onclick="document.getElementById('storeLogoInput').click()" class="relative group cursor-pointer w-28 h-28 mb-3">
+                <div id="preview-circle" class="w-full h-full rounded-full border-2 border-dashed border-white/20 bg-white/[0.03] flex items-center justify-center overflow-hidden transition-all group-hover:border-white/40">
+                    ${data.storeLogo ? `<img src="${data.storeLogo}" class="w-full h-full object-cover">` : `<i class="bi bi-cloud-arrow-up text-2xl text-white/20"></i>`}
+                </div>
+                <div class="absolute bottom-0 right-0 bg-white text-black rounded-full p-1.5 shadow-lg">
+                    <i class="bi bi-camera-fill text-xs"></i>
+                </div>
+                <input type="file" id="storeLogoInput" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+            </div>
+            <p class="text-[10px] uppercase tracking-[0.2em] text-white/30">Store Logo</p>
+        </div>
+
+        <div class="space-y-4">
+            <label class="text-[11px] uppercase tracking-widest text-white/30 ml-1">Brand Accent Color</label>
+            <div class="flex flex-wrap gap-3 justify-between items-center bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+                <div class="flex gap-2">
+                    ${['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'].map(color => `
+                        <button onclick="selectColor('${color}')" 
+                                class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${data.brandColor === color ? 'border-white scale-110' : 'border-transparent'}" 
+                                style="background-color: ${color}"></button>
+                    `).join('')}
+                </div>
+                
+                <div class="flex items-center gap-2 border-l border-white/10 pl-3">
+                    <div id="color-indicator" class="w-4 h-4 rounded-full transition-colors duration-300" style="background-color: ${data.brandColor || '#3b82f6'}"></div>
+                    <input type="text" id="brandColor" value="${data.brandColor || '#3b82f6'}" 
+                           class="bg-transparent text-white text-xs font-mono outline-none w-20" 
+                           oninput="updateColorIndicator(this.value)"
+                           onfocus="this.select()">
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="storeLogo" value="${data.storeLogo || ''}">
+    </div>`
+            },
         ];
 
         function renderOptions(opts, current, hasIcons = false) {
@@ -510,6 +554,55 @@
 </div>`;
         }
 
+        //handle the display and pick the image and the unique color
+        window.handleLogoUpload = (event) => {
+            const file = event.target.files[0];
+            const previewCircle = document.getElementById('preview-circle');
+            const hiddenInput = document.getElementById('storeLogo');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageUrl = e.target.result;
+                    // Update Preview & Data
+                    if (previewCircle) previewCircle.innerHTML = `<img src="${imageUrl}" class="w-full h-full object-cover animate-fade-in">`;
+                    if (hiddenInput) hiddenInput.value = imageUrl;
+                    formData.storeLogo = imageUrl;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.selectColor = (color) => {
+            const input = document.getElementById('brandColor');
+            const indicator = document.getElementById('color-indicator');
+
+            // Update Input, Indicator, and Global Data
+            if (input) input.value = color.toUpperCase();
+            if (indicator) indicator.style.backgroundColor = color;
+            formData.brandColor = color;
+
+            // Optional: If you want the "Finish Setup" button to change color too
+            const finishBtn = document.getElementById('next-btn');
+            if (finishBtn) finishBtn.style.backgroundColor = color;
+        };
+
+        window.updateColorIndicator = (value) => {
+            const indicator = document.getElementById('color-indicator');
+            const finishBtn = document.getElementById('next-btn');
+
+            // Validate hex format (#FFF or #FFFFFF)
+            if (/^#([0-9A-F]{3}){1,2}$/i.test(value)) {
+                if (indicator) indicator.style.backgroundColor = value;
+                if (finishBtn) finishBtn.style.backgroundColor = value;
+                formData.brandColor = value;
+            }
+        };  // Also add a listener to trigger the hidden file input when the circle is clicked
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('#logo-preview-container')) {
+                document.getElementById('storeLogoInput').click();
+            }
+        });
         function saveCurrentData() {
             const step = steps[currentStep];
             if (step.fields) {
